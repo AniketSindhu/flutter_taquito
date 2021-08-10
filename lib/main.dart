@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_taquito/model/wallet_js_bundler.dart';
+import 'package:flutter_taquito/model/beacon.dart';
+import 'package:flutter_taquito/model/tezos.dart';
 import 'package:js/js_util.dart';
 
 void main() {
@@ -29,25 +30,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  DappClient? client;
+  TezosToolkit? tezos;
+  BeaconWallet? beaconWallet;
+  String? key = "Connect Wallet First";
   @override
   void initState() {
     super.initState();
-    client = new DappClient(Options(name: "My app"));
-    //print(client);
-    promiseToFuture(client!.init()).then((value) {
-      print(" ok $value");
-/*       promiseToFuture(client!.requestPermissions()).then((permissions) {
-        print(permissions);
-      }); */
-    });
-    //client!.connect();
+    tezos = new TezosToolkit("https://florencenet.smartpy.io");
+    beaconWallet = BeaconWallet(BeaconWalletOptions(
+      name: "Example Dapp",
+      preferredNetwork: "florencenet",
+      iconUrl: 'https://tezostaquito.io/img/favicon.png',
+    ));
   }
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  void connect() async {
+    await beaconWallet!
+        .requestPermissions(Permissions(network: Network(type: "florencenet")));
+    if (beaconWallet != null) {
+      tezos!.setWalletProvider(beaconWallet!);
+      key = await promiseToFuture(beaconWallet!.getPKH());
+      setState(() {});
+    } else {
+      print("Wallet not connected Error.");
+    }
   }
 
   @override
@@ -61,19 +67,18 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You have pushed the button this many times:',
+              'Public Key',
             ),
             Text(
-              '$_counter',
+              '$key',
               style: Theme.of(context).textTheme.headline4,
             ),
+            SizedBox(
+              height: 20,
+            ),
+            ElevatedButton(onPressed: connect, child: Text('Connect Wallet'))
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
       ),
     );
   }
